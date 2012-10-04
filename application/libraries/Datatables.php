@@ -413,13 +413,18 @@
     protected function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
+      // Perhaps it may be best to set this as a member and set it in __construct()
+      // If you do that remember that it won't be the third element in the $trace array
+      // but will be the first.
+      $trace = debug_backtrace();
+      $class = $trace[3]['class'];
 
       if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
         foreach($custom_val['replacement'] as $key => $val)
         {
           $sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
-          if(preg_match('/(\w+)\((.*)\)/i', $val, $matches) && function_exists($matches[1]))
+          if(preg_match('/(\w+)\((.*)\)/i', $val, $matches) && (function_exists($matches[1]) || method_exists($class,$matches[1])))
           {
             $func = $matches[1];
             $args = preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
@@ -430,7 +435,10 @@
               $args[$args_key] = (in_array($args_val, $this->columns))? ($row_data[($this->check_mDataprop())? $args_val : array_search($args_val, $this->columns)]) : $args_val;
             }
 
-            $replace_string = call_user_func_array($func, $args);
+            if(method_exists($class,$matches[1]))
+            	$replace_string = call_user_func_array($func, $args);
+            else
+            	$replace_string = call_user_func_array(array($class,$func), $args);
           }
           elseif(in_array($sval, $this->columns))
             $replace_string = $row_data[($this->check_mDataprop())? $sval : array_search($sval, $this->columns)];
