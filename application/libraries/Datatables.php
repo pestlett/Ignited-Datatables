@@ -436,9 +436,9 @@
             }
 
             if(method_exists($class,$matches[1]))
-            	$replace_string = call_user_func_array($func, $args);
-            else
             	$replace_string = call_user_func_array(array($class,$func), $args);
+            else
+            	$replace_string = call_user_func_array($func, $args);
           }
           elseif(in_array($sval, $this->columns))
             $replace_string = $row_data[($this->check_mDataprop())? $sval : array_search($sval, $this->columns)];
